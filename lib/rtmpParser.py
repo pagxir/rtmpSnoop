@@ -50,7 +50,7 @@ class rtmpParser():
         amfCmds = amfCommands()
         
         #Looking for the handshake
-        H1 = stream.getBytes(1)
+        H1 = stream.getBytes(1).decode('cp437')
         H1_rndData = stream.getBytes(0x600) #1536
         H2_rndData = stream.getBytes(0x600)
 
@@ -116,7 +116,7 @@ class rtmpParser():
 
         #Now reading the RTMP payload from the stream
         magic_byte = 0xC0 + chunk_stream_id
-        magic_bytes_count = body_size / 128
+        magic_bytes_count = int(body_size / 128)
         rtmp_payload = stream.getBytes(body_size + magic_bytes_count)
 
         if rtmp_payload == None:
@@ -126,7 +126,7 @@ class rtmpParser():
         n = 0
         while (n<len(rtmp_payload)):
             if (n % 128 == 0) and (n != 0):
-                if rtmp_payload[n] == chr(magic_byte):
+                if rtmp_payload[n] == (magic_byte):
                     rtmp_payload = rtmp_payload[:n] + rtmp_payload[n+1:]
                 else:
                     logger.debug("Expected RTMP magic byte not found in the payload: %d" % n)
@@ -187,12 +187,12 @@ class rtmpParser():
     def rtmpParseObject(self, p):
 
         #Object type
-        b = p.getBytes(1)
+        b = p.getBytes(1).decode('cp437')
 
         #STRING
         if (b == self.AMF_STRING):
             strlen =  Utils.str2num(p.getBytes(2))
-            string = p.getBytes(strlen)
+            string = p.getBytes(strlen).decode('cp437')
             logger.debug("Found a string [%s]..." % string)
             return string
 
@@ -215,11 +215,11 @@ class rtmpParser():
             obj = dict()
 
             #Reading all the object properties, until End Of Object marker is reached
-            while (p.readBytes(3) != "\x00\x00\x09"):
+            while (p.readBytes(3) != b"\x00\x00\x09"):
                 
                 #Property name
                 strlen =  Utils.str2num(p.getBytes(2))
-                key = p.getBytes(strlen)
+                key = p.getBytes(strlen).decode('cp437')
                 logger.debug("Property name [%s]..." % key)
 
                 #Property value
@@ -242,7 +242,7 @@ class rtmpParser():
         elif (b == self.AMF_ARRAY):
             arraylen =  Utils.str2num(p.getBytes(4))
             logger.debug("Found an array...")
-            while (p.readBytes(3) != "\x00\x00\x09"):
+            while (p.readBytes(3) != b"\x00\x00\x09"):
                 pass
             p.getBytes(3)
             return 0
